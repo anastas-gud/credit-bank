@@ -9,32 +9,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import ru.gudoshnikova.calculator.dto.CreditDto;
 import ru.gudoshnikova.calculator.dto.ErrorResponseDto;
 import ru.gudoshnikova.calculator.dto.LoanOfferDto;
 import ru.gudoshnikova.calculator.dto.LoanStatementRequestDto;
 import ru.gudoshnikova.calculator.dto.ScoringDataDto;
-import ru.gudoshnikova.calculator.service.CalculatorService;
 
 import java.util.List;
 
-@Slf4j
-@RestController
-@RequestMapping("/calculator")
-@AllArgsConstructor
 @Tag(name = "Calculator Controller", description = "Контроллер для расчета кредитных предложений и кредита")
-public class CalculatorController {
+public interface CalculatorController {
 
-    private final CalculatorService calculatorService;
-
-    @PostMapping("/offers")
     @Operation(
             summary = "Расчет возможных условий кредита",
             description = """
@@ -62,11 +49,10 @@ public class CalculatorController {
             ),
             @ApiResponse(
                     responseCode = "500",
-                    description = "Внутренняя ошибка сервера",
-                    content = @Content()
+                    description = "Внутренняя ошибка сервера"
             )
     })
-    public ResponseEntity<List<LoanOfferDto>> calculateOffers(
+    ResponseEntity<List<LoanOfferDto>> calculateOffers(
             @Parameter(
                     description = "Данные заявки на кредит",
                     required = true,
@@ -75,18 +61,10 @@ public class CalculatorController {
                             schema = @Schema(implementation = LoanStatementRequestDto.class)
                     )
             )
-            @Valid @RequestBody LoanStatementRequestDto request) {
-        log.info("A request has been received to calculate loan offers");
-        log.info("Full input data: {}", request);
+            @Valid @RequestBody LoanStatementRequestDto request
+    );
 
-        List<LoanOfferDto> offers = calculatorService.calculateLoanOffers(request);
-        log.info("Successfully calculated {} offers", offers.size());
-        log.info("Calculated offers: {}", offers);
 
-        return ResponseEntity.ok(offers);
-    }
-
-    @PostMapping("/calc")
     @Operation(
             summary = "Полный расчет параметров кредита",
             description = """
@@ -116,11 +94,10 @@ public class CalculatorController {
             ),
             @ApiResponse(
                     responseCode = "500",
-                    description = "Внутренняя ошибка сервера",
-                    content = @Content()
+                    description = "Внутренняя ошибка сервера"
             )
     })
-    public ResponseEntity<CreditDto> calculateCredit(
+    ResponseEntity<CreditDto> calculateCredit(
             @Parameter(
                     description = "Данные для скоринга",
                     required = true,
@@ -129,13 +106,6 @@ public class CalculatorController {
                             schema = @Schema(implementation = ScoringDataDto.class)
                     )
             )
-            @Valid @RequestBody ScoringDataDto scoringData) {
-        log.info("A request has been received for a full loan settlement");
-        log.info("Full input data: {}", scoringData);
-
-        CreditDto credit = calculatorService.calculateCredit(scoringData);
-        log.info("The loan was successfully calculated: {}", credit);
-
-        return ResponseEntity.ok(credit);
-    }
+            @Valid @RequestBody ScoringDataDto scoringData
+    );
 }

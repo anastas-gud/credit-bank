@@ -15,6 +15,7 @@ import ru.gudoshnikova.calculator.enums.Gender;
 import ru.gudoshnikova.calculator.enums.MaritalStatus;
 import ru.gudoshnikova.calculator.enums.Position;
 import ru.gudoshnikova.calculator.exception.LoanDeniedException;
+import ru.gudoshnikova.calculator.service.impl.ScoringServiceImpl;
 import ru.gudoshnikova.calculator.util.ScoringConstants;
 
 import java.math.BigDecimal;
@@ -26,10 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
-class ScoringServiceTest {
+class ScoringServiceImplTest {
 
     @InjectMocks
-    private ScoringService scoringService;
+    private ScoringServiceImpl scoringService;
 
     @Mock
     private CalculatorConfig config;

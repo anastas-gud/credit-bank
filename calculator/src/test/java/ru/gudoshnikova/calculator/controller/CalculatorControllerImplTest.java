@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.gudoshnikova.calculator.controller.impl.CalculatorControllerImpl;
 import ru.gudoshnikova.calculator.dto.CreditDto;
 import ru.gudoshnikova.calculator.dto.EmploymentDto;
 import ru.gudoshnikova.calculator.dto.LoanOfferDto;
@@ -30,8 +31,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(CalculatorController.class)
-class CalculatorControllerTest {
+@WebMvcTest(CalculatorControllerImpl.class)
+class CalculatorControllerImplTest {
 
     @Autowired
     private MockMvc mockMvc;

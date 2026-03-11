@@ -17,6 +17,7 @@ import ru.gudoshnikova.calculator.enums.EmploymentStatus;
 import ru.gudoshnikova.calculator.enums.Gender;
 import ru.gudoshnikova.calculator.enums.MaritalStatus;
 import ru.gudoshnikova.calculator.enums.Position;
+import ru.gudoshnikova.calculator.service.impl.CalculatorServiceImpl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -34,10 +35,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CalculatorServiceTest {
+class CalculatorServiceImplTest {
 
     @InjectMocks
-    private CalculatorService calculatorService;
+    private CalculatorServiceImpl calculatorService;
 
     @Mock
     private PrescoringService prescoringService;

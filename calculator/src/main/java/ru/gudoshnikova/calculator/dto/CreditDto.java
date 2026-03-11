@@ -16,7 +16,7 @@ import java.util.List;
 @Schema(description = "Информация о кредите")
 public class CreditDto {
     @Schema(description = "Сумма кредита", example = "500000.00")
-    private BigDecimal amount;   // с учетом страховки?
+    private BigDecimal amount;
 
     @Schema(description = "Срок кредита в месяцах", example = "24")
     private Integer term;
@@ -25,7 +25,7 @@ public class CreditDto {
     private BigDecimal monthlyPayment;
 
     @Schema(description = "Процентная ставка", example = "12.5")
-    private BigDecimal rate;    // финальную ставку?
+    private BigDecimal rate;
 
     @Schema(description = "Полная стоимость кредита", example = "15.2")
     private BigDecimal psk;

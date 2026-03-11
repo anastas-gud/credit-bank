@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.gudoshnikova.calculator.dto.LoanStatementRequestDto;
 import ru.gudoshnikova.calculator.exception.PrescoringFailedException;
+import ru.gudoshnikova.calculator.service.impl.PrescoringServiceImpl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,10 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-class PrescoringServiceTest {
+class PrescoringServiceImplTest {
 
     @InjectMocks
-    private PrescoringService prescoringService;
+    private PrescoringServiceImpl prescoringService;
 
     private LoanStatementRequestDto loanStatementRequestDto;
 
