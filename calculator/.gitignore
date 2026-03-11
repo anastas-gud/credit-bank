@@ -1,4 +1,8 @@
 target/
+.mvn/
+.gitattributes
+mvnw
+mvnw.cmd
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
