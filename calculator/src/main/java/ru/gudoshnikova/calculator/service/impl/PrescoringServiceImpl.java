@@ -14,7 +14,7 @@ import java.time.Period;
 public class PrescoringServiceImpl implements PrescoringService {
     @Override
     public void prescoring(LoanStatementRequestDto request) {
-        log.info("The beginning of perscoring, data: {}", request);
+        log.info("The beginning of prescoring, data: {}", request);
 
         log.debug("The beginning of age verification");
         int age = Period.between(request.getBirthdate(), LocalDate.now()).getYears();

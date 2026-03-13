@@ -89,7 +89,7 @@ public class CalculatorServiceImpl implements CalculatorService {
         log.info("The payment schedule is calculated ({} payments)", paymentSchedule.size());
 
         BigDecimal psk = calculatePsk(scoringData.getAmount(),
-                creditAmount, finalRate, paymentSchedule, scoringData.getTerm());
+                creditAmount, finalRate, scoringData.getTerm());
         log.info("PSK: {}%", psk);
 
         return CreditDto.builder()
@@ -222,7 +222,6 @@ public class CalculatorServiceImpl implements CalculatorService {
     private BigDecimal calculatePsk(BigDecimal amount,
                                     BigDecimal totalAmount,
                                     BigDecimal rate,
-                                    List<PaymentScheduleElementDto> schedule,
                                     Integer term) {
         log.debug("Calculation of the PSK");
 
