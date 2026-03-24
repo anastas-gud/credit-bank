@@ -2,7 +2,7 @@ package ru.gudoshnikova.calculator.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.gudoshnikova.calculator.dto.LoanStatementRequestDto;
+import ru.gudoshnikova.calculator.api.dto.LoanStatementRequestDto;
 import ru.gudoshnikova.calculator.exception.PrescoringFailedException;
 import ru.gudoshnikova.calculator.service.PrescoringService;
 

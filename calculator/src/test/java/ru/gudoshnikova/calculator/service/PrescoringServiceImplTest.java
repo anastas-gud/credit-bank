@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.gudoshnikova.calculator.dto.LoanStatementRequestDto;
+import ru.gudoshnikova.calculator.api.dto.LoanStatementRequestDto;
 import ru.gudoshnikova.calculator.exception.PrescoringFailedException;
 import ru.gudoshnikova.calculator.service.impl.PrescoringServiceImpl;
 

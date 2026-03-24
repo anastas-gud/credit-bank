@@ -1,6 +1,6 @@
 package ru.gudoshnikova.calculator.service;
 
-import ru.gudoshnikova.calculator.dto.ScoringDataDto;
+import ru.gudoshnikova.calculator.api.dto.ScoringDataDto;
 
 import java.math.BigDecimal;
 
