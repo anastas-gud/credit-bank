@@ -23,7 +23,6 @@ public class CalculatorControllerImpl implements CalculatorController {
 
     private final CalculatorService calculatorService;
 
-    @Override
     @PostMapping("/offers")
     public ResponseEntity<List<LoanOfferDto>> calculateOffers(LoanStatementRequestDto request) {
         log.info("A request has been received to calculate loan offers");
@@ -36,7 +35,6 @@ public class CalculatorControllerImpl implements CalculatorController {
         return ResponseEntity.ok(offers);
     }
 
-    @Override
     @PostMapping("/calc")
     public ResponseEntity<CreditDto> calculateCredit(ScoringDataDto scoringData) {
         log.info("A request has been received for a full loan settlement");

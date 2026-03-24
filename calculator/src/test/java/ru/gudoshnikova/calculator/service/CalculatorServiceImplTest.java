@@ -7,7 +7,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.gudoshnikova.calculator.config.CalculatorConfig;
 import ru.gudoshnikova.calculator.dto.CreditDto;
 import ru.gudoshnikova.calculator.dto.EmploymentDto;
 import ru.gudoshnikova.calculator.dto.LoanOfferDto;
@@ -17,6 +16,7 @@ import ru.gudoshnikova.calculator.enums.EmploymentStatus;
 import ru.gudoshnikova.calculator.enums.Gender;
 import ru.gudoshnikova.calculator.enums.MaritalStatus;
 import ru.gudoshnikova.calculator.enums.Position;
+import ru.gudoshnikova.calculator.config.CalculatorConfig;
 import ru.gudoshnikova.calculator.service.impl.CalculatorServiceImpl;
 
 import java.math.BigDecimal;

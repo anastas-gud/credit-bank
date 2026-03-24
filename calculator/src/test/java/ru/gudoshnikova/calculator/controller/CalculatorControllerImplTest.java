@@ -9,7 +9,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.gudoshnikova.calculator.controller.impl.CalculatorControllerImpl;
 import ru.gudoshnikova.calculator.dto.CreditDto;
 import ru.gudoshnikova.calculator.dto.EmploymentDto;
 import ru.gudoshnikova.calculator.dto.LoanOfferDto;
@@ -19,6 +18,7 @@ import ru.gudoshnikova.calculator.enums.EmploymentStatus;
 import ru.gudoshnikova.calculator.enums.Gender;
 import ru.gudoshnikova.calculator.enums.MaritalStatus;
 import ru.gudoshnikova.calculator.enums.Position;
+import ru.gudoshnikova.calculator.controller.impl.CalculatorControllerImpl;
 import ru.gudoshnikova.calculator.exception.LoanDeniedException;
 import ru.gudoshnikova.calculator.service.CalculatorService;
 
