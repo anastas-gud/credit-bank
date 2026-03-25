@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import ru.gudoshnikova.deal.dto.ErrorResponseDto;
 import ru.gudoshnikova.deal.dto.FinishRegistrationRequestDto;
 import ru.gudoshnikova.deal.dto.LoanOfferDto;
@@ -21,6 +22,7 @@ import ru.gudoshnikova.deal.dto.LoanStatementRequestDto;
 import java.util.List;
 import java.util.UUID;
 
+@RequestMapping("/deal")
 @Tag(name = "Deal Controller", description = "Контроллер для управления заявками и кредитами")
 public interface DealController {
     @PostMapping("/statement")

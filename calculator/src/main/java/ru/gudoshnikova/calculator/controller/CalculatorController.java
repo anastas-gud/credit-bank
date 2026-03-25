@@ -10,7 +10,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import ru.gudoshnikova.calculator.dto.CreditDto;
 import ru.gudoshnikova.calculator.dto.ErrorResponseDto;
 import ru.gudoshnikova.calculator.dto.LoanOfferDto;
@@ -19,9 +21,11 @@ import ru.gudoshnikova.calculator.dto.ScoringDataDto;
 
 import java.util.List;
 
+@RequestMapping("/calculator")
 @Tag(name = "Calculator Controller", description = "Контроллер для расчета кредитных предложений и кредита")
 public interface CalculatorController {
 
+    @PostMapping("/offers")
     @Operation(
             summary = "Расчет возможных условий кредита",
             description = """
@@ -65,6 +69,7 @@ public interface CalculatorController {
     );
 
 
+    @PostMapping("/calc")
     @Operation(
             summary = "Полный расчет параметров кредита",
             description = """
