@@ -1,5 +1,6 @@
 package ru.gudoshnikova.deal.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,6 +53,7 @@ public class Statement {
     private ApplicationStatus status;
 
     @Column(name = "creation_date", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime creationDate;
 
     @JdbcTypeCode(SqlTypes.JSON)

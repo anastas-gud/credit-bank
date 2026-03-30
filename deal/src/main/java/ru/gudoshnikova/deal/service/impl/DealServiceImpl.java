@@ -25,6 +25,7 @@ import ru.gudoshnikova.deal.repository.ClientRepository;
 import ru.gudoshnikova.deal.repository.CreditRepository;
 import ru.gudoshnikova.deal.repository.StatementRepository;
 import ru.gudoshnikova.deal.service.DealService;
+import ru.gudoshnikova.deal.util.ApiConstants;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -73,7 +74,7 @@ public class DealServiceImpl implements DealService {
         log.info("Sending request to calculator service for offers");
         List<LoanOfferDto> offers = restClient.calculatorRestClient()
                 .post()
-                .uri("/calculator/offers")
+                .uri(ApiConstants.CALCULATOR_OFFERS)
                 .body(request)
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
@@ -132,7 +133,7 @@ public class DealServiceImpl implements DealService {
 
         log.info("Sending request to calculator service for credit calculation");
         CreditDto creditDto = restClient.calculatorRestClient().post()
-                .uri("/calculator/calc")
+                .uri(ApiConstants.CALCULATOR_CALC)
                 .body(scoringDataDto)
                 .retrieve()
                 .body(CreditDto.class);
