@@ -17,14 +17,12 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/calculator")
 @AllArgsConstructor
 public class CalculatorControllerImpl implements CalculatorController {
 
     private final CalculatorService calculatorService;
 
     @Override
-    @PostMapping("/offers")
     public ResponseEntity<List<LoanOfferDto>> calculateOffers(LoanStatementRequestDto request) {
         log.info("A request has been received to calculate loan offers");
         log.info("Full input data: {}", request);
@@ -37,7 +35,6 @@ public class CalculatorControllerImpl implements CalculatorController {
     }
 
     @Override
-    @PostMapping("/calc")
     public ResponseEntity<CreditDto> calculateCredit(ScoringDataDto scoringData) {
         log.info("A request has been received for a full loan settlement");
         log.info("Full input data: {}", scoringData);

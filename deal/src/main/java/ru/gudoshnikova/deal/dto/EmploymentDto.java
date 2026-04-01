@@ -1,4 +1,4 @@
-package ru.gudoshnikova.calculator.dto;
+package ru.gudoshnikova.deal.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
@@ -9,7 +9,9 @@ import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;import ru.gudoshnikova.calculator.enums.EmploymentStatus;import ru.gudoshnikova.calculator.enums.Position;
+import lombok.NoArgsConstructor;
+import ru.gudoshnikova.deal.enums.EmploymentStatus;
+import ru.gudoshnikova.deal.enums.EmploymentPosition;
 
 import java.math.BigDecimal;
 
@@ -36,7 +38,7 @@ public class EmploymentDto {
 
     @NotNull(message = "The position is required")
     @Schema(description = "Должность", example = "MIDDLE_MANAGER")
-    private Position position;
+    private EmploymentPosition position;
 
     @NotNull(message = "Total work experience is required")
     @Min(value = 0, message = "Total work experience cannot be negative")

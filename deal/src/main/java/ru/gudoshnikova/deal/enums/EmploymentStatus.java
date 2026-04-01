@@ -1,4 +1,4 @@
-package ru.gudoshnikova.calculator.enums;
+package ru.gudoshnikova.deal.enums;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
