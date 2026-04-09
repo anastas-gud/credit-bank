@@ -1,6 +1,6 @@
-package ru.gudoshnikova.calculator.exception;
+package ru.gudoshnikova.statement.exception;
 
-public class PrescoringFailedException extends RuntimeException {       //todo ubrat
+public class PrescoringFailedException extends RuntimeException {
     public PrescoringFailedException(String message) {
         super(message);
     }

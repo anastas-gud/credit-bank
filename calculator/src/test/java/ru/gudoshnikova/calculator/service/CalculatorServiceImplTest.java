@@ -41,9 +41,6 @@ class CalculatorServiceImplTest {
     private CalculatorServiceImpl calculatorService;
 
     @Mock
-    private PrescoringService prescoringService;
-
-    @Mock
     private ScoringService scoringService;
 
     @Mock
@@ -106,8 +103,6 @@ class CalculatorServiceImplTest {
 
         assertNotNull(offers);
         assertEquals(4, offers.size());
-
-        verify(prescoringService, times(1)).prescoring(loanStatementRequestDto);
 
         for (int i = 0; i < offers.size() - 1; i++) {
             assertTrue(offers.get(i).getRate().compareTo(offers.get(i + 1).getRate()) >= 0);

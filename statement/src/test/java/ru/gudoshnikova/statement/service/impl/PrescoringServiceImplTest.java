@@ -1,4 +1,4 @@
-package ru.gudoshnikova.calculator.service;
+package ru.gudoshnikova.statement.service.impl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -6,9 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.gudoshnikova.calculator.dto.LoanStatementRequestDto;
-import ru.gudoshnikova.calculator.exception.PrescoringFailedException;
-import ru.gudoshnikova.calculator.service.impl.PrescoringServiceImpl;
+import ru.gudoshnikova.statement.dto.LoanStatementRequestDto;
+import ru.gudoshnikova.statement.exception.PrescoringFailedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

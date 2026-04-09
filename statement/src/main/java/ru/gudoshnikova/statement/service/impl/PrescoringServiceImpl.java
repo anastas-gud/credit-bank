@@ -1,10 +1,10 @@
-package ru.gudoshnikova.calculator.service.impl;
+package ru.gudoshnikova.statement.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.gudoshnikova.calculator.dto.LoanStatementRequestDto;
-import ru.gudoshnikova.calculator.exception.PrescoringFailedException;
-import ru.gudoshnikova.calculator.service.PrescoringService;
+import ru.gudoshnikova.statement.dto.LoanStatementRequestDto;
+import ru.gudoshnikova.statement.exception.PrescoringFailedException;
+import ru.gudoshnikova.statement.service.PrescoringService;
 
 import java.time.LocalDate;
 import java.time.Period;

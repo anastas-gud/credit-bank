@@ -1,3 +1,20 @@
 spring:
   application:
     name: statement
+
+server:
+  port: 8082
+
+logging:
+  level:
+    ru.gudoshnikova.deal: DEBUG
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+deal:
+  service:
+    url: http://localhost:8081
