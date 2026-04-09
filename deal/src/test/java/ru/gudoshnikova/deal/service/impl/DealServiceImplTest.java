@@ -233,7 +233,7 @@ class DealServiceImplTest {
 
     @Test
     void selectOfferSuccess() {
-        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+        when(statementRepository.findByIdWithLock(any(UUID.class))).thenReturn(Optional.of(statement));
         when(statementRepository.save(any(Statement.class))).thenReturn(statement);
 
         assertDoesNotThrow(() -> dealService.selectOffer(loanOffer));
@@ -243,19 +243,19 @@ class DealServiceImplTest {
         assertEquals(loanOffer, statement.getAppliedOffer());
         assertFalse(statement.getStatusHistory().isEmpty());
 
-        verify(statementRepository, times(1)).findById(loanOffer.getStatementId());
+        verify(statementRepository, times(1)).findByIdWithLock(loanOffer.getStatementId());
         verify(statementRepository, times(1)).save(statement);
     }
 
     @Test
     void selectOfferStatementNotFound() {
-        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+        when(statementRepository.findByIdWithLock(any(UUID.class))).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> dealService.selectOffer(loanOffer));
 
         assertTrue(exception.getMessage().contains("Statement not found"));
-        verify(statementRepository, times(1)).findById(loanOffer.getStatementId());
+        verify(statementRepository, times(1)).findByIdWithLock(loanOffer.getStatementId());
         verify(statementRepository, never()).save(any());
     }
 

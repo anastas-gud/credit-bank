@@ -92,7 +92,7 @@ public class DealServiceImpl implements DealService {
     public void selectOffer(LoanOfferDto offer) {
         log.info("Selecting offer: {}", offer);
 
-        Statement statement = statementRepository.findById(offer.getStatementId())
+        Statement statement = statementRepository.findByIdWithLock(offer.getStatementId())
                 .orElseThrow(() -> new NotFoundException("Statement not found with id: "
                         + offer.getStatementId()));
         log.info("Found statement with id: {}", statement.getStatementId());

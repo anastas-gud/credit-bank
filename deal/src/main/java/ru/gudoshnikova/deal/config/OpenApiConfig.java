@@ -17,7 +17,7 @@ public class OpenApiConfig {
     private String serverPort;
 
     @Bean
-    public OpenAPI calculatorOpenAPI() {
+    public OpenAPI dealOpenAPI() {
         return new OpenAPI()
                 .openapi("3.0.0")
                 .info(new Info()
