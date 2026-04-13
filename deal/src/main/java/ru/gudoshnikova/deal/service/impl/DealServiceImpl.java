@@ -15,6 +15,7 @@ import ru.gudoshnikova.deal.config.RestClientConfig;
 import ru.gudoshnikova.deal.dto.CreditDto;
 import ru.gudoshnikova.deal.dto.ScoringDataDto;
 import ru.gudoshnikova.deal.exception.NotFoundException;
+import ru.gudoshnikova.deal.integration.calculator.service.CalculatorService;
 import ru.gudoshnikova.deal.mapper.ClientMapper;
 import ru.gudoshnikova.deal.mapper.CreditMapper;
 import ru.gudoshnikova.deal.mapper.ScoringDataMapper;
@@ -40,7 +41,7 @@ public class DealServiceImpl implements DealService {
     private final ClientRepository clientRepository;
     private final StatementRepository statementRepository;
     private final CreditRepository creditRepository;
-    private final RestClientConfig restClient;
+    private final CalculatorService calculatorService;
 
     private final ClientMapper clientMapper;
     private final ScoringDataMapper scoringDataMapper;
@@ -72,13 +73,7 @@ public class DealServiceImpl implements DealService {
         log.info("Statement saved with id: {}", statement.getStatementId());
 
         log.info("Sending request to calculator service for offers");
-        List<LoanOfferDto> offers = restClient.calculatorRestClient()
-                .post()
-                .uri(ApiConstants.CALCULATOR_OFFERS)
-                .body(request)
-                .retrieve()
-                .body(new ParameterizedTypeReference<>() {
-                });
+        List<LoanOfferDto> offers = calculatorService.sendOffersRequest(request);
         log.info("Received {} offers from calculator", offers.size());
 
         offers.forEach(offer -> offer.setStatementId(statement.getStatementId()));
@@ -132,11 +127,7 @@ public class DealServiceImpl implements DealService {
         log.debug("Scoring data built: {}", scoringDataDto);
 
         log.info("Sending request to calculator service for credit calculation");
-        CreditDto creditDto = restClient.calculatorRestClient().post()
-                .uri(ApiConstants.CALCULATOR_CALC)
-                .body(scoringDataDto)
-                .retrieve()
-                .body(CreditDto.class);
+        CreditDto creditDto = calculatorService.sendCalculateRequest(scoringDataDto);
         log.info("Received credit calculation from calculator");
 
         Credit credit = creditMapper.toCredit(creditDto, statement);

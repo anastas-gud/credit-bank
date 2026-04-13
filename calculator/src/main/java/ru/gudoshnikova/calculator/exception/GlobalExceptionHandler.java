@@ -38,19 +38,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
-    @ExceptionHandler(PrescoringFailedException.class)      //todo ubrat
-    public ResponseEntity<ErrorResponseDto> handlePrescoringFailedException(PrescoringFailedException ex) {
-        log.error("Prescoring error: {}", ex.getMessage());
-
-        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Prescoring failed")
-                .message(ex.getMessage())
-                .build();
-        return ResponseEntity.badRequest().body(errorResponse);
-    }
-
     @ExceptionHandler(LoanDeniedException.class)
     public ResponseEntity<ErrorResponseDto> handleLoanDeniedException(LoanDeniedException ex) {
         log.error("Loan denied: {}", ex.getMessage());

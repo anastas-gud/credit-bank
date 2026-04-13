@@ -7,11 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.web.client.RestClient;
 import ru.gudoshnikova.statement.dto.LoanOfferDto;
 import ru.gudoshnikova.statement.dto.LoanStatementRequestDto;
 import ru.gudoshnikova.statement.exception.PrescoringFailedException;
+import ru.gudoshnikova.statement.integration.deal.service.DealService;
 import ru.gudoshnikova.statement.service.PrescoringService;
 
 import java.math.BigDecimal;
@@ -25,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -40,28 +38,19 @@ class StatementServiceImplTest {
     private PrescoringService prescoringService;
 
     @Mock
-    private RestClient dealRestClient;
-
-    @Mock
-    private RestClient.RequestBodyUriSpec requestBodyUriSpec;
-
-    @Mock
-    private RestClient.RequestBodySpec requestBodySpec;
-
-    @Mock
-    private RestClient.ResponseSpec responseSpec;
+    private DealService dealService;
 
     @InjectMocks
     private StatementServiceImpl statementService;
 
-    private LoanStatementRequestDto validLoanStatementRequest;
+    private LoanStatementRequestDto loanStatementRequest;
     private LoanOfferDto loanOffer1;
     private LoanOfferDto loanOffer2;
     private List<LoanOfferDto> loanOffers;
 
     @BeforeEach
     void setUp() {
-        validLoanStatementRequest = LoanStatementRequestDto.builder()
+        loanStatementRequest = LoanStatementRequestDto.builder()
                 .amount(BigDecimal.valueOf(300000))
                 .term(12)
                 .firstName("Ivan")
@@ -102,22 +91,18 @@ class StatementServiceImplTest {
     @DisplayName("Создание заявки - успешный сценарий")
     void createStatementSuccess() {
         doNothing().when(prescoringService).prescoring(any(LoanStatementRequestDto.class));
+        when(dealService.sendStatementRequest(any(LoanStatementRequestDto.class)))
+                .thenReturn(loanOffers);
 
-        when(dealRestClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any(LoanStatementRequestDto.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(loanOffers);
-
-        List<LoanOfferDto> result = statementService.createStatement(validLoanStatementRequest);
+        List<LoanOfferDto> result = statementService.createStatement(loanStatementRequest);
 
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals(loanOffer1.getRate(), result.get(0).getRate());
         assertEquals(loanOffer2.getRate(), result.get(1).getRate());
 
-        verify(prescoringService, times(1)).prescoring(validLoanStatementRequest);
-        verify(dealRestClient, times(1)).post();
+        verify(prescoringService, times(1)).prescoring(loanStatementRequest);
+        verify(dealService, times(1)).sendStatementRequest(loanStatementRequest);
     }
 
     @Test
@@ -128,28 +113,21 @@ class StatementServiceImplTest {
 
         PrescoringFailedException exception = assertThrows(
                 PrescoringFailedException.class,
-                () -> statementService.createStatement(validLoanStatementRequest)
+                () -> statementService.createStatement(loanStatementRequest)
         );
 
         assertEquals("Age must be at least 18 years old", exception.getMessage());
-        verify(prescoringService, times(1)).prescoring(validLoanStatementRequest);
-        verify(dealRestClient, never()).post();
+        verify(prescoringService, times(1)).prescoring(loanStatementRequest);
+        verify(dealService, never()).sendStatementRequest(any());
     }
 
     @Test
     @DisplayName("Выбор предложения - успешный сценарий")
     void selectOfferSuccess() {
-        when(dealRestClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any(LoanOfferDto.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(null);
+        doNothing().when(dealService).sendSelectOfferRequest(any(LoanOfferDto.class));
 
         assertDoesNotThrow(() -> statementService.selectOffer(loanOffer1));
 
-        verify(dealRestClient, times(1)).post();
-        verify(requestBodyUriSpec, times(1)).uri("/deal/offer/select");
-        verify(requestBodySpec, times(1)).body(loanOffer1);
-        verify(responseSpec, times(1)).toBodilessEntity();
+        verify(dealService, times(1)).sendSelectOfferRequest(loanOffer1);
     }
 }
