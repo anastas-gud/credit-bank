@@ -10,7 +10,6 @@ import ru.gudoshnikova.calculator.dto.PaymentScheduleElementDto;
 import ru.gudoshnikova.calculator.dto.ScoringDataDto;
 import ru.gudoshnikova.calculator.config.CalculatorConfig;
 import ru.gudoshnikova.calculator.service.CalculatorService;
-import ru.gudoshnikova.calculator.service.PrescoringService;
 import ru.gudoshnikova.calculator.service.ScoringService;
 import ru.gudoshnikova.calculator.util.ScoringConstants;
 
@@ -27,18 +26,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CalculatorServiceImpl implements CalculatorService {
 
-    private final PrescoringService prescoringService;
     private final ScoringService scoringService;
     private final CalculatorConfig config;
 
     @Override
     public List<LoanOfferDto> calculateLoanOffers(LoanStatementRequestDto request) {
         log.info("Calculation of loan offers on request: {}", request);
-
-        log.info("The beginning of prescoring");
-        prescoringService.prescoring(request);
-        log.info("Prescoring is completed");
-
 
         List<LoanOfferDto> offers = new ArrayList<>();
 

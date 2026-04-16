@@ -23,6 +23,7 @@ import ru.gudoshnikova.deal.config.RestClientConfig;
 import ru.gudoshnikova.deal.dto.CreditDto;
 import ru.gudoshnikova.deal.dto.ScoringDataDto;
 import ru.gudoshnikova.deal.exception.NotFoundException;
+import ru.gudoshnikova.deal.integration.calculator.service.CalculatorService;
 import ru.gudoshnikova.deal.mapper.ClientMapper;
 import ru.gudoshnikova.deal.mapper.CreditMapper;
 import ru.gudoshnikova.deal.mapper.ScoringDataMapper;
@@ -72,19 +73,7 @@ class DealServiceImplTest {
     private CreditRepository creditRepository;
 
     @Mock
-    private RestClientConfig restClientConfig;
-
-    @Mock
-    private RestClient restClient;
-
-    @Mock
-    private RestClient.RequestBodyUriSpec requestBodyUriSpec;
-
-    @Mock
-    private RestClient.RequestBodySpec requestBodySpec;
-
-    @Mock
-    private RestClient.ResponseSpec responseSpec;
+    private CalculatorService calculatorService;
 
     @Mock
     private ClientMapper clientMapper;
@@ -212,13 +201,8 @@ class DealServiceImplTest {
             savedStatement.setStatementId(statement.getStatementId());
             return savedStatement;
         });
-
-        when(restClientConfig.calculatorRestClient()).thenReturn(restClient);
-        when(restClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any(LoanStatementRequestDto.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(loanOffers);
+        when(calculatorService.sendOffersRequest(any(LoanStatementRequestDto.class)))
+                .thenReturn(loanOffers);
 
         List<LoanOfferDto> result = dealService.createStatement(loanStatementRequest);
 
@@ -229,11 +213,12 @@ class DealServiceImplTest {
         verify(clientMapper, times(1)).toClient(loanStatementRequest);
         verify(clientRepository, times(1)).save(any(Client.class));
         verify(statementRepository, times(1)).save(any(Statement.class));
+        verify(calculatorService, times(1)).sendOffersRequest(loanStatementRequest);
     }
 
     @Test
     void selectOfferSuccess() {
-        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+        when(statementRepository.findByIdWithLock(any(UUID.class))).thenReturn(Optional.of(statement));
         when(statementRepository.save(any(Statement.class))).thenReturn(statement);
 
         assertDoesNotThrow(() -> dealService.selectOffer(loanOffer));
@@ -243,19 +228,19 @@ class DealServiceImplTest {
         assertEquals(loanOffer, statement.getAppliedOffer());
         assertFalse(statement.getStatusHistory().isEmpty());
 
-        verify(statementRepository, times(1)).findById(loanOffer.getStatementId());
+        verify(statementRepository, times(1)).findByIdWithLock(loanOffer.getStatementId());
         verify(statementRepository, times(1)).save(statement);
     }
 
     @Test
     void selectOfferStatementNotFound() {
-        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+        when(statementRepository.findByIdWithLock(any(UUID.class))).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> dealService.selectOffer(loanOffer));
 
         assertTrue(exception.getMessage().contains("Statement not found"));
-        verify(statementRepository, times(1)).findById(loanOffer.getStatementId());
+        verify(statementRepository, times(1)).findByIdWithLock(loanOffer.getStatementId());
         verify(statementRepository, never()).save(any());
     }
 
@@ -266,14 +251,8 @@ class DealServiceImplTest {
         when(clientRepository.save(any(Client.class))).thenReturn(client);
         when(scoringDataMapper.toScoringDataDto(any(Client.class), any(Statement.class)))
                 .thenReturn(scoringDataDto);
-
-        when(restClientConfig.calculatorRestClient()).thenReturn(restClient);
-        when(restClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any(ScoringDataDto.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(CreditDto.class)).thenReturn(creditDto);
-
+        when(calculatorService.sendCalculateRequest(any(ScoringDataDto.class)))
+                .thenReturn(creditDto);
         when(creditMapper.toCredit(any(CreditDto.class), any(Statement.class))).thenReturn(credit);
         when(creditRepository.save(any(Credit.class))).thenReturn(credit);
         when(statementRepository.save(any(Statement.class))).thenReturn(statement);
@@ -287,7 +266,7 @@ class DealServiceImplTest {
         verify(clientMapper, times(1)).updateClientFromFinishRegistration(any(), any());
         verify(clientRepository, times(1)).save(any(Client.class));
         verify(scoringDataMapper, times(1)).toScoringDataDto(any(), any());
-        verify(restClient, times(1)).post();
+        verify(calculatorService, times(1)).sendCalculateRequest(any(ScoringDataDto.class));
         verify(creditMapper, times(1)).toCredit(any(), any());
         verify(creditRepository, times(1)).save(any(Credit.class));
         verify(statementRepository, times(1)).save(statement);
