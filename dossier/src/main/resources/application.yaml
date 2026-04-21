@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: dossier
+
+server:
+  port: 8083
+
+logging:
+  level:
+    ru.gudoshnikova.dossier: DEBUG
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
