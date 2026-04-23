@@ -54,6 +54,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.error("Illegal Argument Exception: {}", ex.getMessage());
+
+        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Illegal Argument")
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
     @ExceptionHandler(CalculatorServiceException.class)
     public ResponseEntity<ErrorResponseDto> handleCalculatorServiceException(CalculatorServiceException ex) {
         log.error("Calculator service error: {}", ex.getMessage());
@@ -62,6 +76,20 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Calculator Service Error")
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @ExceptionHandler(DocumentGenerationException.class)
+    public ResponseEntity<ErrorResponseDto> handleDocumentGenerationException(DocumentGenerationException ex) {
+        log.error("Document Generation error: {}", ex.getMessage());
+
+        ErrorResponseDto errorResponse = ErrorResponseDto.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Document Generation Error")
                 .message(ex.getMessage())
                 .build();
 

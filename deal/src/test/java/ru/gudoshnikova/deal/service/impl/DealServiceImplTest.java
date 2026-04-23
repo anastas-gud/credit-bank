@@ -3,11 +3,12 @@ package ru.gudoshnikova.deal.service.impl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.web.client.RestClient;
+import org.springframework.kafka.core.KafkaTemplate;
+import ru.gudoshnikova.deal.dto.EmailMessage;
 import ru.gudoshnikova.deal.dto.EmploymentDto;
 import ru.gudoshnikova.deal.dto.FinishRegistrationRequestDto;
 import ru.gudoshnikova.deal.dto.LoanOfferDto;
@@ -19,9 +20,9 @@ import ru.gudoshnikova.deal.enums.MaritalStatus;
 import ru.gudoshnikova.deal.enums.EmploymentStatus;
 import ru.gudoshnikova.deal.enums.EmploymentPosition;
 import ru.gudoshnikova.deal.enums.CreditStatus;
-import ru.gudoshnikova.deal.config.RestClientConfig;
 import ru.gudoshnikova.deal.dto.CreditDto;
 import ru.gudoshnikova.deal.dto.ScoringDataDto;
+import ru.gudoshnikova.deal.exception.CalculatorServiceException;
 import ru.gudoshnikova.deal.exception.NotFoundException;
 import ru.gudoshnikova.deal.integration.calculator.service.CalculatorService;
 import ru.gudoshnikova.deal.mapper.ClientMapper;
@@ -42,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +52,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -84,6 +89,12 @@ class DealServiceImplTest {
     @Mock
     private CreditMapper creditMapper;
 
+    @Mock
+    private DocumentGeneratorServiceImpl documentGenerator;
+
+    @Mock
+    private KafkaTemplate<String, EmailMessage> kafkaTemplate;
+
     private LoanStatementRequestDto loanStatementRequest;
     private LoanOfferDto loanOffer;
     private FinishRegistrationRequestDto finishRegistrationRequest;
@@ -93,9 +104,12 @@ class DealServiceImplTest {
     private CreditDto creditDto;
     private ScoringDataDto scoringDataDto;
     private List<LoanOfferDto> loanOffers;
+    private byte[] testDocument;
 
     @BeforeEach
     void setUp() {
+        testDocument = "test document content".getBytes();
+
         loanStatementRequest = LoanStatementRequestDto.builder()
                 .amount(BigDecimal.valueOf(300000))
                 .term(12)
@@ -116,16 +130,8 @@ class DealServiceImplTest {
                 .birthdate(LocalDate.of(1996, 12, 23))
                 .build();
 
-        statement = Statement.builder()
-                .statementId(UUID.randomUUID())
-                .client(client)
-                .status(ApplicationStatus.PREAPPROVAL)
-                .creationDate(LocalDateTime.now())
-                .statusHistory(new ArrayList<>())
-                .build();
-
         loanOffer = LoanOfferDto.builder()
-                .statementId(statement.getStatementId())
+                .statementId(UUID.randomUUID())
                 .requestedAmount(BigDecimal.valueOf(300000))
                 .totalAmount(BigDecimal.valueOf(309000))
                 .term(12)
@@ -133,6 +139,15 @@ class DealServiceImplTest {
                 .rate(BigDecimal.valueOf(12.0))
                 .isInsuranceEnabled(true)
                 .isSalaryClient(false)
+                .build();
+
+        statement = Statement.builder()
+                .statementId(UUID.randomUUID())
+                .client(client)
+                .status(ApplicationStatus.PREAPPROVAL)
+                .creationDate(LocalDateTime.now())
+                .statusHistory(new ArrayList<>())
+                .appliedOffer(loanOffer)
                 .build();
 
         loanOffers = Arrays.asList(loanOffer);
@@ -220,6 +235,8 @@ class DealServiceImplTest {
     void selectOfferSuccess() {
         when(statementRepository.findByIdWithLock(any(UUID.class))).thenReturn(Optional.of(statement));
         when(statementRepository.save(any(Statement.class))).thenReturn(statement);
+        when(kafkaTemplate.send(anyString(), any(EmailMessage.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         assertDoesNotThrow(() -> dealService.selectOffer(loanOffer));
 
@@ -230,6 +247,7 @@ class DealServiceImplTest {
 
         verify(statementRepository, times(1)).findByIdWithLock(loanOffer.getStatementId());
         verify(statementRepository, times(1)).save(statement);
+        verify(kafkaTemplate, times(1)).send(eq("finish-registration"), any(EmailMessage.class));
     }
 
     @Test
@@ -256,6 +274,8 @@ class DealServiceImplTest {
         when(creditMapper.toCredit(any(CreditDto.class), any(Statement.class))).thenReturn(credit);
         when(creditRepository.save(any(Credit.class))).thenReturn(credit);
         when(statementRepository.save(any(Statement.class))).thenReturn(statement);
+        when(kafkaTemplate.send(anyString(), any(EmailMessage.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         assertDoesNotThrow(() -> dealService.calculateCredit(statement.getStatementId(), finishRegistrationRequest));
 
@@ -270,6 +290,7 @@ class DealServiceImplTest {
         verify(creditMapper, times(1)).toCredit(any(), any());
         verify(creditRepository, times(1)).save(any(Credit.class));
         verify(statementRepository, times(1)).save(statement);
+        verify(kafkaTemplate, times(1)).send(eq("create-documents"), any(EmailMessage.class));
     }
 
     @Test
@@ -284,5 +305,166 @@ class DealServiceImplTest {
         verify(statementRepository, times(1)).findById(statementId);
         verify(clientMapper, never()).updateClientFromFinishRegistration(any(), any());
         verify(creditRepository, never()).save(any());
+    }
+
+    @Test
+    void sendDocumentsSuccess() {
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+        when(documentGenerator.generateCreditDocument(any(), any(), anyDouble(), anyInt(), anyDouble()))
+                .thenReturn(testDocument);
+        when(statementRepository.save(any(Statement.class))).thenReturn(statement);
+        when(kafkaTemplate.send(anyString(), any(EmailMessage.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        assertDoesNotThrow(() -> dealService.sendDocuments(statement.getStatementId()));
+
+        assertEquals(ApplicationStatus.PREPARE_DOCUMENTS, statement.getStatus());
+        assertFalse(statement.getStatusHistory().isEmpty());
+
+        verify(statementRepository, times(1)).findById(statement.getStatementId());
+        verify(documentGenerator, times(1)).generateCreditDocument(
+                eq(statement.getStatementId()),
+                eq(client.getFirstName() + " " + client.getLastName()),
+                eq(loanOffer.getTotalAmount().doubleValue()),
+                eq(loanOffer.getTerm()),
+                eq(loanOffer.getRate().doubleValue())
+        );
+        verify(statementRepository, times(1)).save(statement);
+        verify(kafkaTemplate, times(1)).send(eq("send-documents"), any(EmailMessage.class));
+    }
+
+    @Test
+    void sendDocumentsStatementNotFound() {
+        UUID statementId = UUID.randomUUID();
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> dealService.sendDocuments(statementId));
+
+        assertTrue(exception.getMessage().contains("Statement not found"));
+        verify(statementRepository, times(1)).findById(statementId);
+        verify(documentGenerator, never()).generateCreditDocument(any(), any(), anyDouble(), anyInt(), anyDouble());
+        verify(statementRepository, never()).save(any());
+    }
+
+    @Test
+    void signDocumentsSuccess() {
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+        when(statementRepository.save(any(Statement.class))).thenReturn(statement);
+        when(kafkaTemplate.send(anyString(), any(EmailMessage.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        ArgumentCaptor<Statement> statementCaptor = ArgumentCaptor.forClass(Statement.class);
+
+        assertDoesNotThrow(() -> dealService.signDocuments(statement.getStatementId()));
+
+        verify(statementRepository, times(1)).findById(statement.getStatementId());
+        verify(statementRepository, times(1)).save(statementCaptor.capture());
+        verify(kafkaTemplate, times(1)).send(eq("send-ses"), any(EmailMessage.class));
+
+        Statement savedStatement = statementCaptor.getValue();
+        assertNotNull(savedStatement.getSesCode());
+        assertEquals(6, savedStatement.getSesCode().length());
+        assertTrue(savedStatement.getSesCode().matches("\\d{6}"));
+    }
+
+    @Test
+    void signDocumentsStatementNotFound() {
+        UUID statementId = UUID.randomUUID();
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> dealService.signDocuments(statementId));
+
+        assertTrue(exception.getMessage().contains("Statement not found"));
+        verify(statementRepository, times(1)).findById(statementId);
+        verify(statementRepository, never()).save(any());
+    }
+
+    @Test
+    void verifyCodeSuccess() {
+        String correctCode = "123456";
+        statement.setSesCode(correctCode);
+        statement.setCredit(credit);
+
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+        when(creditRepository.save(any(Credit.class))).thenReturn(credit);
+        when(statementRepository.save(any(Statement.class))).thenReturn(statement);
+        when(kafkaTemplate.send(anyString(), any(EmailMessage.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        assertDoesNotThrow(() -> dealService.verifyCode(statement.getStatementId(), correctCode));
+
+        assertEquals(CreditStatus.ISSUED, credit.getCreditStatus());
+        assertEquals(ApplicationStatus.CREDIT_ISSUED, statement.getStatus());
+        assertNotNull(statement.getSignDate());
+        assertFalse(statement.getStatusHistory().isEmpty());
+
+        verify(statementRepository, times(1)).findById(statement.getStatementId());
+        verify(creditRepository, times(1)).save(credit);
+        verify(statementRepository, times(1)).save(statement);
+        verify(kafkaTemplate, times(1)).send(eq("credit-issued"), any(EmailMessage.class));
+    }
+
+    @Test
+    void verifyCodeStatementNotFound() {
+        UUID statementId = UUID.randomUUID();
+        String code = "123456";
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> dealService.verifyCode(statementId, code));
+
+        assertTrue(exception.getMessage().contains("Statement not found"));
+        verify(statementRepository, times(1)).findById(statementId);
+        verify(creditRepository, never()).save(any());
+        verify(statementRepository, never()).save(any());
+    }
+
+    @Test
+    void verifyCodeInvalidCode() {
+        statement.setSesCode("123456");
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> dealService.verifyCode(statement.getStatementId(), "000000"));
+
+        assertEquals("Invalid verification code", exception.getMessage());
+        verify(statementRepository, times(1)).findById(statement.getStatementId());
+        verify(creditRepository, never()).save(any());
+        verify(statementRepository, never()).save(any());
+    }
+
+    @Test
+    void verifyCodeNullCodeInStatement() {
+        statement.setSesCode(null);
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> dealService.verifyCode(statement.getStatementId(), "123456"));
+
+        assertEquals("Invalid verification code", exception.getMessage());
+        verify(statementRepository, times(1)).findById(statement.getStatementId());
+        verify(creditRepository, never()).save(any());
+        verify(statementRepository, never()).save(any());
+    }
+
+    @Test
+    void calculateCreditCalculatorDenied() {
+        when(statementRepository.findById(any(UUID.class))).thenReturn(Optional.of(statement));
+        doNothing().when(clientMapper).updateClientFromFinishRegistration(any(), any());
+        when(clientRepository.save(any(Client.class))).thenReturn(client);
+        when(scoringDataMapper.toScoringDataDto(any(Client.class), any(Statement.class)))
+                .thenReturn(scoringDataDto);
+        when(calculatorService.sendCalculateRequest(any(ScoringDataDto.class)))
+                .thenThrow(new CalculatorServiceException("Loan denied: insufficient income", "LOAN_DENIED"));
+        when(statementRepository.save(any(Statement.class))).thenReturn(statement);
+        when(kafkaTemplate.send(anyString(), any(EmailMessage.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        assertDoesNotThrow(() -> dealService.calculateCredit(statement.getStatementId(), finishRegistrationRequest));
+
+        assertEquals(ApplicationStatus.CC_DENIED, statement.getStatus());
+        verify(statementRepository, times(1)).save(statement);
+        verify(kafkaTemplate, times(1)).send(eq("statement-denied"), any(EmailMessage.class));
     }
 }
