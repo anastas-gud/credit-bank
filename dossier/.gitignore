@@ -4,6 +4,7 @@ target/
 .gitattributes
 mvnw
 mvnw.cmd
+.env
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
