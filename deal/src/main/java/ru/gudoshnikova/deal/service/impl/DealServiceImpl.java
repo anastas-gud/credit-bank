@@ -41,6 +41,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class DealServiceImpl implements DealService {
 
+    private static final String STATEMENT_NOT_FOUND_MSG = "Statement not found with id: %s";
+
     private final ClientRepository clientRepository;
     private final StatementRepository statementRepository;
     private final CreditRepository creditRepository;
@@ -94,8 +96,8 @@ public class DealServiceImpl implements DealService {
         log.info("Selecting offer: {}", offer);
 
         Statement statement = statementRepository.findByIdWithLock(offer.getStatementId())
-                .orElseThrow(() -> new NotFoundException("Statement not found with id: "
-                        + offer.getStatementId()));
+                .orElseThrow(() -> new NotFoundException(
+                        String.format(STATEMENT_NOT_FOUND_MSG, offer.getStatementId())));
         log.info("Found statement with id: {}", statement.getStatementId());
 
         statement.setStatus(ApplicationStatus.APPROVED);
@@ -122,8 +124,8 @@ public class DealServiceImpl implements DealService {
         log.info("Calculating credit for statement: {}", statementId);
 
         Statement statement = statementRepository.findById(statementId)
-                .orElseThrow(() -> new NotFoundException("Statement not found with id: "
-                        + statementId));
+                .orElseThrow(() -> new NotFoundException(
+                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
 
         log.info("Found statement with id: {}", statement.getStatementId());
 
@@ -181,7 +183,8 @@ public class DealServiceImpl implements DealService {
         log.info("Sending documents for statement: {}", statementId);
 
         Statement statement = statementRepository.findById(statementId)
-                .orElseThrow(() -> new NotFoundException("Statement not found with id: " + statementId));
+                .orElseThrow(() -> new NotFoundException(
+                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
 
         statement.setStatus(ApplicationStatus.PREPARE_DOCUMENTS);
         statement.getStatusHistory().add(StatementStatusHistoryDto.builder()
@@ -209,7 +212,8 @@ public class DealServiceImpl implements DealService {
         log.info("Signing documents for statement: {}", statementId);
 
         Statement statement = statementRepository.findById(statementId)
-                .orElseThrow(() -> new NotFoundException("Statement not found with id: " + statementId));
+                .orElseThrow(() -> new NotFoundException(
+                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
 
         String sesCode = String.format("%06d", new Random().nextInt(999999));
         statement.setSesCode(sesCode);
@@ -225,7 +229,8 @@ public class DealServiceImpl implements DealService {
         log.info("Verifying code for statement: {}", statementId);
 
         Statement statement = statementRepository.findById(statementId)
-                .orElseThrow(() -> new NotFoundException("Statement not found with id: " + statementId));
+                .orElseThrow(() -> new NotFoundException(
+                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
 
         if (statement.getSesCode() != null && statement.getSesCode().equals(code)) {
             Credit credit = statement.getCredit();
