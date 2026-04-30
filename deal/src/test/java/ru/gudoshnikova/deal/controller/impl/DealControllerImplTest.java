@@ -187,4 +187,91 @@ class DealControllerImplTest {
 
         verify(dealService, times(1)).calculateCredit(eq(statementId), any());
     }
+
+    @Test
+    void sendDocumentsSuccess() throws Exception {
+        UUID statementId = UUID.randomUUID();
+        doNothing().when(dealService).sendDocuments(any(UUID.class));
+
+        mockMvc.perform(post("/deal/document/" + statementId + "/send"))
+                .andExpect(status().isOk());
+
+        verify(dealService, times(1)).sendDocuments(statementId);
+    }
+
+    @Test
+    void sendDocumentsWhenStatementNotFound() throws Exception {
+        UUID statementId = UUID.randomUUID();
+        doThrow(new NotFoundException("Statement not found with id: " + statementId))
+                .when(dealService).sendDocuments(any(UUID.class));
+
+        mockMvc.perform(post("/deal/document/" + statementId + "/send"))
+                .andExpect(status().isNotFound());
+
+        verify(dealService, times(1)).sendDocuments(statementId);
+    }
+
+    @Test
+    void signDocumentsSuccess() throws Exception {
+        UUID statementId = UUID.randomUUID();
+        doNothing().when(dealService).signDocuments(any(UUID.class));
+
+        mockMvc.perform(post("/deal/document/" + statementId + "/sign"))
+                .andExpect(status().isOk());
+
+        verify(dealService, times(1)).signDocuments(statementId);
+    }
+
+    @Test
+    void signDocumentsWhenStatementNotFound() throws Exception {
+        UUID statementId = UUID.randomUUID();
+        doThrow(new NotFoundException("Statement not found with id: " + statementId))
+                .when(dealService).signDocuments(any(UUID.class));
+
+        mockMvc.perform(post("/deal/document/" + statementId + "/sign"))
+                .andExpect(status().isNotFound());
+
+        verify(dealService, times(1)).signDocuments(statementId);
+    }
+
+    @Test
+    void verifyCodeSuccess() throws Exception {
+        UUID statementId = UUID.randomUUID();
+        String code = "123456";
+        doNothing().when(dealService).verifyCode(any(UUID.class), any(String.class));
+
+        mockMvc.perform(post("/deal/document/" + statementId + "/code")
+                        .param("code", code))
+                .andExpect(status().isOk());
+
+        verify(dealService, times(1)).verifyCode(statementId, code);
+    }
+
+    @Test
+    void verifyCodeWhenStatementNotFound() throws Exception {
+        UUID statementId = UUID.randomUUID();
+        String code = "123456";
+        doThrow(new NotFoundException("Statement not found with id: " + statementId))
+                .when(dealService).verifyCode(any(UUID.class), any(String.class));
+
+        mockMvc.perform(post("/deal/document/" + statementId + "/code")
+                        .param("code", code))
+                .andExpect(status().isNotFound());
+
+        verify(dealService, times(1)).verifyCode(statementId, code);
+    }
+
+    @Test
+    void verifyCodeWithInvalidCode() throws Exception {
+        UUID statementId = UUID.randomUUID();
+        String code = "000000";
+        doThrow(new IllegalArgumentException("Invalid verification code"))
+                .when(dealService).verifyCode(any(UUID.class), any(String.class));
+
+        mockMvc.perform(post("/deal/document/" + statementId + "/code")
+                        .param("code", code))
+                .andExpect(status().isBadRequest());
+
+        verify(dealService, times(1)).verifyCode(statementId, code);
+    }
 }

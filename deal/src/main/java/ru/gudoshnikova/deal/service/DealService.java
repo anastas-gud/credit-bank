@@ -13,4 +13,10 @@ public interface DealService {
     void selectOffer(LoanOfferDto loanOfferDto);
 
     void calculateCredit(UUID statementId, FinishRegistrationRequestDto request);
+
+    void sendDocuments(UUID statementId);
+
+    void signDocuments(UUID statementId);
+
+    void verifyCode(UUID statementId, String code);
 }

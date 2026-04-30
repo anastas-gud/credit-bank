@@ -24,16 +24,18 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Statement Microservice API")
                         .description("""
-                                Микросервис для обработки кредитных заявок.
+                                Микросервис для отправки email уведомлений клиентам.
                                 
                                 ## Функциональность:
-                                * **POST /statement** - прескоринг заявки и отправка в Deal микросервис для расчета предложений
-                                * **POST /statement/offer** - выбор кредитного предложения и отправка в Deal микросервис
+                                * **POST /dossier/email** - отправка email сообщения
                                 
-                                ## Логика работы:
-                                1. Прескоринг входных данных
-                                2. Отправка запроса в Deal микросервис
-                                3. Возврат кредитных предложений
+                                ## Топики Kafka:
+                                * finish-registration - завершение регистрации
+                                * create-documents - создание документов
+                                * send-documents - отправка документов
+                                * send-ses - отправка SES кода
+                                * credit-issued - кредит выдан
+                                * statement-denied - заявка отклонена
                                 """)
                         .version("1.0.0")
                         .contact(new Contact()

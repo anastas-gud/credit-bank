@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import ru.gudoshnikova.deal.dto.ErrorResponseDto;
 import ru.gudoshnikova.deal.dto.FinishRegistrationRequestDto;
 import ru.gudoshnikova.deal.dto.LoanOfferDto;
@@ -136,4 +137,41 @@ public interface DealController {
                     )
             )
             @Valid @RequestBody FinishRegistrationRequestDto request);
+
+    @PostMapping("/document/{statementId}/send")
+    @Operation(
+            summary = "Запрос на отправку документов",
+            description = "Формирует документы и отправляет их на почту клиенту"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Документы отправлены"),
+            @ApiResponse(responseCode = "404", description = "Заявка не найдена"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    ResponseEntity<Void> sendDocuments(@PathVariable UUID statementId);
+
+    @PostMapping("/document/{statementId}/sign")
+    @Operation(
+            summary = "Запрос на подписание документов",
+            description = "Отправляет код подтверждения для подписания документов"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Код подтверждения отправлен"),
+            @ApiResponse(responseCode = "404", description = "Заявка не найдена"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    ResponseEntity<Void> signDocuments(@PathVariable UUID statementId);
+
+    @PostMapping("/document/{statementId}/code")
+    @Operation(
+            summary = "Подписание документов",
+            description = "Подтверждает код и выдает кредит"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Кредит успешно выдан"),
+            @ApiResponse(responseCode = "404", description = "Заявка не найдена"),
+            @ApiResponse(responseCode = "400", description = "Неверный код подтверждения"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    ResponseEntity<Void> verifyCode(@PathVariable UUID statementId, @RequestParam String code);
 }

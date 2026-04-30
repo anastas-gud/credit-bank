@@ -7,7 +7,7 @@ server:
 
 logging:
   level:
-    ru.gudoshnikova.deal: DEBUG
+    ru.gudoshnikova.statement: DEBUG
 
 springdoc:
   api-docs:

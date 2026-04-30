@@ -43,7 +43,7 @@ public class RestClientConfig {
                     log.error("Calculator error: type={}, message={}", errorType, errorMessage);
 
                     throw new CalculatorServiceException(
-                            String.format("%s: %s", errorType, errorMessage)
+                            String.format("%s: %s", errorType, errorMessage), errorType
                     );
                 })
                 .defaultStatusHandler(HttpStatusCode::is5xxServerError, (request, response) -> {
