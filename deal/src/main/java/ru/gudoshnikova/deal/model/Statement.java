@@ -1,6 +1,7 @@
 package ru.gudoshnikova.deal.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -42,10 +43,12 @@ public class Statement {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Client client;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "credit_id")
+    @JsonIgnoreProperties({"statement", "hibernateLazyInitializer", "handler"})
     private Credit credit;
 
     @Enumerated(EnumType.STRING)
@@ -61,6 +64,7 @@ public class Statement {
     private LoanOfferDto appliedOffer;
 
     @Column(name = "sign_date")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime signDate;
 
     @Column(name = "ses_code")
