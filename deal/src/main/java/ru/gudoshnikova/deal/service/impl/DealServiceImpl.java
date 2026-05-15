@@ -29,6 +29,7 @@ import ru.gudoshnikova.deal.repository.ClientRepository;
 import ru.gudoshnikova.deal.repository.CreditRepository;
 import ru.gudoshnikova.deal.repository.StatementRepository;
 import ru.gudoshnikova.deal.service.DealService;
+import ru.gudoshnikova.deal.util.ExceptionMessageConstants;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,8 +41,6 @@ import java.util.UUID;
 @Service
 @AllArgsConstructor
 public class DealServiceImpl implements DealService {
-
-    private static final String STATEMENT_NOT_FOUND_MSG = "Statement not found with id: %s";
 
     private final ClientRepository clientRepository;
     private final StatementRepository statementRepository;
@@ -97,7 +96,7 @@ public class DealServiceImpl implements DealService {
 
         Statement statement = statementRepository.findByIdWithLock(offer.getStatementId())
                 .orElseThrow(() -> new NotFoundException(
-                        String.format(STATEMENT_NOT_FOUND_MSG, offer.getStatementId())));
+                        String.format(ExceptionMessageConstants.STATEMENT_NOT_FOUND_MSG, offer.getStatementId())));
         log.info("Found statement with id: {}", statement.getStatementId());
 
         statement.setStatus(ApplicationStatus.APPROVED);
@@ -125,7 +124,7 @@ public class DealServiceImpl implements DealService {
 
         Statement statement = statementRepository.findById(statementId)
                 .orElseThrow(() -> new NotFoundException(
-                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
+                        String.format(ExceptionMessageConstants.STATEMENT_NOT_FOUND_MSG, statementId)));
 
         log.info("Found statement with id: {}", statement.getStatementId());
 
@@ -184,7 +183,7 @@ public class DealServiceImpl implements DealService {
 
         Statement statement = statementRepository.findById(statementId)
                 .orElseThrow(() -> new NotFoundException(
-                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
+                        String.format(ExceptionMessageConstants.STATEMENT_NOT_FOUND_MSG, statementId)));
 
         statement.setStatus(ApplicationStatus.PREPARE_DOCUMENTS);
         statement.getStatusHistory().add(StatementStatusHistoryDto.builder()
@@ -213,7 +212,7 @@ public class DealServiceImpl implements DealService {
 
         Statement statement = statementRepository.findById(statementId)
                 .orElseThrow(() -> new NotFoundException(
-                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
+                        String.format(ExceptionMessageConstants.STATEMENT_NOT_FOUND_MSG, statementId)));
 
         String sesCode = String.format("%06d", new Random().nextInt(999999));
         statement.setSesCode(sesCode);
@@ -230,7 +229,7 @@ public class DealServiceImpl implements DealService {
 
         Statement statement = statementRepository.findById(statementId)
                 .orElseThrow(() -> new NotFoundException(
-                        String.format(STATEMENT_NOT_FOUND_MSG, statementId)));
+                        String.format(ExceptionMessageConstants.STATEMENT_NOT_FOUND_MSG, statementId)));
 
         if (statement.getSesCode() != null && statement.getSesCode().equals(code)) {
             Credit credit = statement.getCredit();

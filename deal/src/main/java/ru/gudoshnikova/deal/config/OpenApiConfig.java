@@ -34,6 +34,9 @@ public class OpenApiConfig {
                                 * **POST /deal/document/{statementId}/sign** - запрос кода подтверждения для подписания
                                 * **POST /deal/document/{statementId}/code** - подтверждение кода и выдача кредита
                                 
+                                * **GET /deal/admin/statement/{statementId}** - получение заявки по ID
+                                * **GET /deal/admin/statement** - получение всех заявок
+                                
                                 ## Логика работы:
                                 1. При получении заявки создается клиент и заявка в БД
                                 2. Отправляется запрос в калькулятор для получения 4 кредитных предложений

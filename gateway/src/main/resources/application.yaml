@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: gateway
+
+logging:
+  level:
+    ru.gudoshnikova.gateway: DEBUG
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: 8084
+
+services:
+  statement:
+    url: http://localhost:8082
+  deal:
+    url: http://localhost:8081
