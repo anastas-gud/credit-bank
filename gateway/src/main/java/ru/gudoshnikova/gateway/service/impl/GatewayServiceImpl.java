@@ -13,6 +13,7 @@ import ru.gudoshnikova.gateway.dto.LoanStatementRequestDto;
 import ru.gudoshnikova.gateway.dto.StatementDto;
 import ru.gudoshnikova.gateway.exception.ClientHttpException;
 import ru.gudoshnikova.gateway.exception.ExternalServiceException;
+import ru.gudoshnikova.gateway.integration.service.IntegrationService;
 import ru.gudoshnikova.gateway.service.GatewayService;
 import ru.gudoshnikova.gateway.util.PathConstants;
 
@@ -26,6 +27,7 @@ public class GatewayServiceImpl implements GatewayService {
 
     private final RestClient statementRestClient;
     private final RestClient dealRestClient;
+    private final IntegrationService integrationService;
 
     private static final String LOG_START_CREATE_STATEMENT = "Gateway: Creating statement for request: {}";
     private static final String LOG_START_SELECT_OFFER = "Gateway: Selecting offer: {}";
@@ -36,14 +38,6 @@ public class GatewayServiceImpl implements GatewayService {
     private static final String LOG_START_GET_STATEMENT_BY_ID = "Gateway: Getting statement by id: {}";
     private static final String LOG_START_GET_ALL_STATEMENTS = "Gateway: Getting all statements";
     private static final String LOG_REQUEST_COMPLETED = "Gateway: Request completed successfully";
-
-    private static final String ERROR_REST_CLIENT = "Gateway: RestClientException while executing '{}', operation: {}";
-    private static final String ERROR_SERVER_ERROR = "Gateway: Server error while executing '{}', status code: {}";
-    private static final String ERROR_CLIENT_ERROR = "Gateway: Client error while executing '{}', status code: {}";
-
-    private static final String EXTERNAL_SERVICE_ERROR = "Failed to execute operation: {}";
-    private static final String INTERNAL_SERVER_ERROR = "Deal or statement service internal error";
-    private static final String CLIENT_ERROR_TEMPLATE = "Client error with status code: {}";
 
     private static final String OP_CREATE_STATEMENT = "create statement";
     private static final String OP_SELECT_OFFER = "select offer";
@@ -57,7 +51,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public List<LoanOfferDto> createStatement(LoanStatementRequestDto request) {
         log.info(LOG_START_CREATE_STATEMENT, request);
-        List<LoanOfferDto> offers = executePostForObject(statementRestClient,
+        List<LoanOfferDto> offers = integrationService.executePostForObject(statementRestClient,
                 PathConstants.STATEMENT_PATH,
                 request,
                 new ParameterizedTypeReference<>() {
@@ -70,7 +64,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public void selectOffer(LoanOfferDto loanOffer) {
         log.info(LOG_START_SELECT_OFFER, loanOffer);
-        executePost(statementRestClient,
+        integrationService.executePost(statementRestClient,
                 PathConstants.STATEMENT_OFFER_PATH,
                 loanOffer,
                 OP_SELECT_OFFER);
@@ -80,7 +74,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public void calculateCredit(UUID statementId, FinishRegistrationRequestDto request) {
         log.info(LOG_START_CALCULATE_CREDIT, statementId);
-        executePost(dealRestClient,
+        integrationService.executePost(dealRestClient,
                 PathConstants.DEAL_CALCULATE_PATH,
                 request,
                 OP_CALCULATE_CREDIT,
@@ -91,7 +85,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public void sendDocuments(UUID statementId) {
         log.info(LOG_START_SEND_DOCUMENTS, statementId);
-        executePost(dealRestClient,
+        integrationService.executePost(dealRestClient,
                 PathConstants.DEAL_DOCUMENT_SEND_PATH,
                 null,
                 OP_SEND_DOCUMENTS,
@@ -102,7 +96,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public void signDocuments(UUID statementId) {
         log.info(LOG_START_SIGN_DOCUMENTS, statementId);
-        executePost(dealRestClient,
+        integrationService.executePost(dealRestClient,
                 PathConstants.DEAL_DOCUMENT_SIGN_PATH,
                 null,
                 OP_SIGN_DOCUMENTS,
@@ -113,7 +107,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public void verifyCode(UUID statementId, String code) {
         log.info(LOG_START_VERIFY_CODE, statementId);
-        executePostWithQuery(dealRestClient,
+        integrationService.executePostWithQuery(dealRestClient,
                 PathConstants.DEAL_DOCUMENT_CODE_PATH,
                 "code",
                 code,
@@ -125,7 +119,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public StatementDto getStatementById(UUID statementId) {
         log.info(LOG_START_GET_STATEMENT_BY_ID, statementId);
-        StatementDto response = executeGet(dealRestClient,
+        StatementDto response = integrationService.executeGet(dealRestClient,
                 PathConstants.DEAL_ADMIN_STATEMENT,
                 new ParameterizedTypeReference<>() {
                 },
@@ -138,96 +132,12 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public List<StatementDto> getAllStatements() {
         log.info(LOG_START_GET_ALL_STATEMENTS);
-        List<StatementDto> response = executeGet(dealRestClient,
+        List<StatementDto> response = integrationService.executeGet(dealRestClient,
                 PathConstants.DEAL_ADMIN_STATEMENTS,
                 new ParameterizedTypeReference<>() {
                 },
                 OP_GET_ALL_STATEMENTS);
         log.info(LOG_REQUEST_COMPLETED);
         return response;
-    }
-
-    private void executePost(RestClient client, String uri, Object body,
-                             String operationName, Object... uriVariables) {
-        try {
-            RestClient.RequestBodySpec request = client.post().uri(uri, uriVariables);
-            if (body != null) {
-                request.body(body);
-            }
-            request.retrieve()
-                    .onStatus(HttpStatusCode::is5xxServerError, getServerErrorHandler(operationName))
-                    .onStatus(HttpStatusCode::is4xxClientError, getClientErrorHandler(operationName))
-                    .toBodilessEntity();
-        } catch (RestClientException e) {
-            log.error(ERROR_REST_CLIENT, operationName, e.getMessage(), e);
-            throw new ExternalServiceException(String.format(EXTERNAL_SERVICE_ERROR, operationName), e);
-        }
-    }
-
-    private void executePostWithQuery(RestClient client, String uri, String queryParam,
-                                      String queryValue, String operationName, Object... uriVariables) {
-        try {
-            client.post()
-                    .uri(uriBuilder -> uriBuilder
-                            .path(uri)
-                            .queryParam(queryParam, queryValue)
-                            .build(uriVariables))
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is5xxServerError, getServerErrorHandler(operationName))
-                    .onStatus(HttpStatusCode::is4xxClientError, getClientErrorHandler(operationName))
-                    .toBodilessEntity();
-        } catch (RestClientException e) {
-            log.error(ERROR_REST_CLIENT, operationName, e.getMessage(), e);
-            throw new ExternalServiceException(String.format(EXTERNAL_SERVICE_ERROR, operationName), e);
-        }
-    }
-
-    private <T> T executePostForObject(RestClient client, String uri, Object body,
-                                       ParameterizedTypeReference<T> responseType,
-                                       String operationName, Object... uriVariables) {
-        try {
-            RestClient.RequestBodySpec request = client.post().uri(uri, uriVariables);
-            if (body != null) {
-                request.body(body);
-            }
-            return request
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is5xxServerError, getServerErrorHandler(operationName))
-                    .onStatus(HttpStatusCode::is4xxClientError, getClientErrorHandler(operationName))
-                    .body(responseType);
-        } catch (RestClientException e) {
-            log.error(ERROR_REST_CLIENT, operationName, e.getMessage(), e);
-            throw new ExternalServiceException(String.format(EXTERNAL_SERVICE_ERROR, operationName), e);
-        }
-    }
-
-    private <T> T executeGet(RestClient client, String uri,
-                             ParameterizedTypeReference<T> responseType,
-                             String operationName, Object... uriVariables) {
-        try {
-            return client.get()
-                    .uri(uri, uriVariables)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is5xxServerError, getServerErrorHandler(operationName))
-                    .onStatus(HttpStatusCode::is4xxClientError, getClientErrorHandler(operationName))
-                    .body(responseType);
-        } catch (RestClientException e) {
-            log.error(ERROR_REST_CLIENT, operationName, e.getMessage(), e);
-            throw new ExternalServiceException(String.format(EXTERNAL_SERVICE_ERROR, operationName), e);
-        }
-    }
-
-    private RestClient.ResponseSpec.ErrorHandler getServerErrorHandler(String operationName) {
-        return (request, response) -> {
-            log.error(ERROR_SERVER_ERROR, operationName, response.getStatusCode());
-            throw new ExternalServiceException(INTERNAL_SERVER_ERROR);
-        };
-    }
-
-    private RestClient.ResponseSpec.ErrorHandler getClientErrorHandler(String operationName) {
-        return (request, response) -> {
-            log.error(ERROR_CLIENT_ERROR, operationName, response.getStatusCode());
-            throw new ClientHttpException(String.format(CLIENT_ERROR_TEMPLATE, response.getStatusCode()));
-        };
     }
 }
