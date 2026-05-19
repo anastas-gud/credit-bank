@@ -1,0 +1,138 @@
+# docker-compose.yml
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - credit-bank-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - credit-bank-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - credit-bank-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    networks:
+      - credit-bank-network
+
+  calculator:
+    build:
+      context: ./calculator
+    ports:
+      - "8080:8080"
+    networks:
+      - credit-bank-network
+
+  deal:
+    build:
+      context: ./deal
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - CALCULATOR_SERVICE_URL=${CALCULATOR_SERVICE_URL}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PRODUCER_KEY-SERIALIZER=org.apache.kafka.common.serialization.StringSerializer
+      - SPRING_KAFKA_PRODUCER_VALUE-SERIALIZER=org.springframework.kafka.support.serializer.JsonSerializer
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - credit-bank-network
+
+  statement:
+    build:
+      context: ./statement
+    ports:
+      - "8082:8082"
+    environment:
+      - DEAL_SERVICE_URL=${DEAL_SERVICE_URL}
+    networks:
+      - credit-bank-network
+
+  dossier:
+    build:
+      context: ./dossier
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=kafka:9092
+      - SPRING_KAFKA_CONSUMER_GROUP-ID=dossier-group
+      - SPRING_KAFKA_CONSUMER_AUTO-OFFSET-RESET=earliest
+      - SPRING_KAFKA_CONSUMER_KEY-DESERIALIZER=org.apache.kafka.common.serialization.StringDeserializer
+      - SPRING_KAFKA_CONSUMER_VALUE-DESERIALIZER=org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      - SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TRUSTED_PACKAGES="*"
+      - SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_VALUE_DEFAULT_TYPE=ru.gudoshnikova.dossier.dto.EmailMessage
+      - SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_USE_TYPE_HEADERS="false"
+      - SPRING_MAIL_HOST=${EMAIL_HOST}
+      - SPRING_MAIL_PORT=${EMAIL_PORT}
+      - SPRING_MAIL_USERNAME=${EMAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${EMAIL_PASSWORD}
+      - SPRING_MAIL_FROM=${EMAIL_FROM}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH="true"
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE="true"
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED="true"
+    depends_on:
+      - kafka
+    networks:
+      - credit-bank-network
+
+  gateway:
+    build:
+      context: ./gateway
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVICES_STATEMENT_URL=${STATEMENT_SERVICE_URL}
+      - SERVICES_DEAL_URL=${DEAL_SERVICE_URL}
+    networks:
+      - credit-bank-network
+
+networks:
+  credit-bank-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
