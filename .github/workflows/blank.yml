@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches:
+      - 'feature/MVP-6'
       - 'develop'
       - 'main'
   pull_request:
