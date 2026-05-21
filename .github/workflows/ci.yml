@@ -51,6 +51,12 @@ jobs:
           files: ./${{ matrix.service }}/target/site/jacoco/jacoco.xml
           flags: ${{ matrix.service }}
 
+      - name: Set main branch in SonarCloud
+        run: |
+          curl -s -u ${{ secrets.SONAR_TOKEN }}: \
+            -X POST \
+            "https://sonarcloud.io/api/project_branches/rename?project=credit-bank_${{ matrix.service }}&name=feature/MVP-6"
+
       - name: SonarCloud Scan
         working-directory: ./${{ matrix.service }}
         run: >
