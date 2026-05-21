@@ -5,8 +5,8 @@ spring:
   mail:
     host: smtp.mail.ru
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:test@mail.ru}
+    password: ${MAIL_PASSWORD:test}
     from: ${MAIL_FROM}
     properties:
       mail:
