@@ -55,7 +55,7 @@ jobs:
         working-directory: ./${{ matrix.service }}
         run: >
           mvn sonar:sonar
-          -Dsonar.projectKey=anastas-gud_credit-bank_${{ matrix.service }}
+          -Dsonar.projectKey=credit-bank_${{ matrix.service }}
           -Dsonar.organization=anastas-gud
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.token=${{ secrets.SONAR_TOKEN }}
