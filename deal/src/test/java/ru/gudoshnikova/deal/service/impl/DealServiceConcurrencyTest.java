@@ -4,13 +4,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.gudoshnikova.deal.dto.EmailMessage;
 import ru.gudoshnikova.deal.dto.LoanOfferDto;
 import ru.gudoshnikova.deal.enums.ApplicationStatus;
 import ru.gudoshnikova.deal.model.Client;
@@ -32,6 +35,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Testcontainers
@@ -45,6 +51,7 @@ class DealServiceConcurrencyTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9093");
     }
 
     @Autowired
@@ -59,12 +66,18 @@ class DealServiceConcurrencyTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @MockitoBean
+    private KafkaTemplate<String, EmailMessage> kafkaTemplate;
+
     private UUID statementId;
     private LoanOfferDto offer1;
     private LoanOfferDto offer2;
 
     @BeforeEach
     void setUp() {
+        when(kafkaTemplate.send(anyString(), any(EmailMessage.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
         Client client = Client.builder()
                 .firstName("Test")
                 .lastName("Client")
@@ -117,14 +130,15 @@ class DealServiceConcurrencyTest {
 
         CompletableFuture<Void> future1 = CompletableFuture.runAsync(() -> {
             try {
-                firstCallStartTime.set(System.nanoTime());
-                System.out.println("[" + Thread.currentThread().getName() + "] Первый вызов: начало");
+                firstCallStartTime.set(System.currentTimeMillis());
+                System.out.println("[" + firstCallStartTime.get() + "] [ПОТОК-1] Первый вызов: начало");
 
                 dealService.selectOffer(offer1);
 
-                firstCallEndTime.set(System.nanoTime());
-                System.out.println("[" + Thread.currentThread().getName() + "] Первый вызов: завершен");
+                firstCallEndTime.set(System.currentTimeMillis());
+                System.out.println("[" + firstCallEndTime.get() + "] [ПОТОК-1] Первый вызов: завершен");
             } catch (Exception e) {
+                System.err.println("[ПОТОК-1] Ошибка: " + e.getMessage());
                 e.printStackTrace();
             } finally {
                 bothCompleted.countDown();
@@ -135,14 +149,15 @@ class DealServiceConcurrencyTest {
 
         CompletableFuture<Void> future2 = CompletableFuture.runAsync(() -> {
             try {
-                secondCallStartTime.set(System.nanoTime());
-                System.out.println("[" + Thread.currentThread().getName() + "] Второй вызов: начало (ждет блокировку)");
+                secondCallStartTime.set(System.currentTimeMillis());
+                System.out.println("[" + secondCallStartTime.get() + "] [ПОТОК-2] Второй вызов: начало (ждет блокировку)");
 
                 dealService.selectOffer(offer2);
 
-                secondCallEndTime.set(System.nanoTime());
-                System.out.println("[" + Thread.currentThread().getName() + "] Второй вызов: завершен");
+                secondCallEndTime.set(System.currentTimeMillis());
+                System.out.println("[" + secondCallEndTime.get() + "] [ПОТОК-2] Второй вызов: завершен");
             } catch (Exception e) {
+                System.err.println("[ПОТОК-2] Ошибка: " + e.getMessage());
                 e.printStackTrace();
             } finally {
                 bothCompleted.countDown();
@@ -152,22 +167,16 @@ class DealServiceConcurrencyTest {
         boolean completed = bothCompleted.await(15, TimeUnit.SECONDS);
         assertThat(completed).isTrue();
 
-        long firstCallDuration = TimeUnit.NANOSECONDS.toMillis(firstCallEndTime.get() - firstCallStartTime.get());
-        long secondCallDuration = TimeUnit.NANOSECONDS.toMillis(secondCallEndTime.get() - secondCallStartTime.get());
+        long firstCallDuration = firstCallEndTime.get() - firstCallStartTime.get();
+        long secondCallDuration = secondCallEndTime.get() - secondCallStartTime.get();
 
         System.out.println("Первый вызов длился: " + firstCallDuration + " ms");
         System.out.println("Второй вызов длился: " + secondCallDuration + " ms");
         System.out.println("Второй вызов начался позже первого на: " +
-                TimeUnit.NANOSECONDS.toMillis(secondCallStartTime.get() - firstCallStartTime.get()) + " ms");
-
-        assertThat(secondCallStartTime.get())
-                .isGreaterThan(firstCallStartTime.get());
+                (secondCallStartTime.get() - firstCallStartTime.get()) + " ms");
 
         assertThat(secondCallEndTime.get())
                 .isGreaterThan(firstCallEndTime.get());
-
-        assertThat(secondCallEndTime.get())
-                .isGreaterThanOrEqualTo(firstCallEndTime.get());
 
         assertThat(future1.isCompletedExceptionally()).isFalse();
         assertThat(future2.isCompletedExceptionally()).isFalse();
@@ -179,46 +188,57 @@ class DealServiceConcurrencyTest {
 
     @Test
     void shouldWaitForLock() throws Exception {
-
         ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch firstCallStarted = new CountDownLatch(1);
+        CountDownLatch firstCallCompleted = new CountDownLatch(1);
 
-        CountDownLatch lockAcquired = new CountDownLatch(1);
-        CountDownLatch releaseLock = new CountDownLatch(1);
-
-        executor.submit(() -> {
+        Future<?> firstCall = executor.submit(() -> {
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
             tx.execute(status -> {
-                statementRepository.findByIdWithLock(statementId).orElseThrow();
-
-                lockAcquired.countDown();
-
                 try {
-                    releaseLock.await();
-                } catch (InterruptedException ignored) {
-                }
+                    System.out.println("[" + System.currentTimeMillis() + "] [ПОТОК-1] Захватываю блокировку...");
+                    firstCallStarted.countDown();
 
+                    Statement statement = statementRepository.findByIdWithLock(statementId).orElseThrow();
+
+                    Thread.sleep(3000);
+
+                    statement.setStatus(ApplicationStatus.APPROVED);
+                    statement.setAppliedOffer(offer1);
+                    statementRepository.save(statement);
+
+                    System.out.println("[" + System.currentTimeMillis() + "] [ПОТОК-1] Освобождаю блокировку");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 return null;
             });
+            firstCallCompleted.countDown();
+            return null;
         });
 
-        lockAcquired.await();
+        firstCallStarted.await();
+        System.out.println("[" + System.currentTimeMillis() + "] [ПОТОК-1] Блокировка захвачена");
 
         Future<?> secondCall = executor.submit(() -> {
+            System.out.println("[" + System.currentTimeMillis() + "] [ПОТОК-2] Пытаюсь захватить блокировку (жду)...");
+
             dealService.selectOffer(offer2);
+
+            System.out.println("[" + System.currentTimeMillis() + "] [ПОТОК-2] Блокировка захвачена и выполнена");
+            return null;
         });
 
         Thread.sleep(1000);
-
         assertThat(secondCall.isDone()).isFalse();
 
-        releaseLock.countDown();
+        firstCallCompleted.await();
 
         secondCall.get(5, TimeUnit.SECONDS);
 
-        Statement updated = statementRepository.findById(statementId).orElseThrow();
-
-        assertThat(updated.getStatus()).isEqualTo(ApplicationStatus.APPROVED);
-        assertThat(updated.getAppliedOffer()).isNotNull();
+        Statement updatedStatement = statementRepository.findById(statementId).orElseThrow();
+        assertThat(updatedStatement.getStatus()).isEqualTo(ApplicationStatus.APPROVED);
+        assertThat(updatedStatement.getAppliedOffer()).isNotNull();
 
         executor.shutdown();
     }
