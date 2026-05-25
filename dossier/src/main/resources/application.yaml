@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: dossier
+
+  mail:
+    host: smtp.mail.ru
+    port: 587
+    username: ${MAIL_USERNAME:test@mail.ru}
+    password: ${MAIL_PASSWORD:test}
+    from: ${MAIL_FROM:testfrom@mail.ru}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          from: ${MAIL_FROM}
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: dossier-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: ru.gudoshnikova.dossier.dto.EmailMessage
+
+server:
+  port: 8083
+
+logging:
+  level:
+    ru.gudoshnikova.dossier: DEBUG

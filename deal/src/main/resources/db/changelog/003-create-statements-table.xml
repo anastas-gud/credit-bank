@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-create-statements-table" author="gudoshnikova">
+        <createTable tableName="statements">
+            <column name="statement_id" type="uuid">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="client_id" type="uuid">
+                <constraints nullable="false"
+                             foreignKeyName="fk_statements_client_id"
+                             references="clients(client_id)"/>
+            </column>
+            <column name="credit_id" type="uuid">
+                <constraints foreignKeyName="fk_statements_credit_id"
+                             references="credits(credit_id)"/>
+            </column>
+            <column name="status" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creation_date" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="applied_offer" type="jsonb"/>
+            <column name="sign_date" type="timestamp"/>
+            <column name="ses_code" type="varchar(6)"/>
+            <column name="status_history" type="jsonb"/>
+        </createTable>
+
+        <createIndex tableName="statements" indexName="idx_statements_client_id">
+            <column name="client_id"/>
+        </createIndex>
+        <createIndex tableName="statements" indexName="idx_statements_credit_id">
+            <column name="credit_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

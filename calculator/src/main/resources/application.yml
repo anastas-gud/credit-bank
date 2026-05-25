@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: calculator
+
+server:
+  port: 8080
+
+calculator:
+  base-rate: 15.0
+  insurance-cost-percent: 3.0
+
+logging:
+  level:
+    ru.gudoshnikova.calculator: DEBUG
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
